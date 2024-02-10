@@ -3,7 +3,7 @@ from typing import List
 from fastapi import FastAPI, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 
-from database import engine, SessionLocal
+from database import SessionLocal
 from models.models import ToDo
 from schemas import ToDoCreateSchema, ToDoSchema
 
