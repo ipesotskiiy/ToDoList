@@ -1,10 +1,10 @@
-from sqlalchemy import MetaData, Table, Column, Integer, String
+from sqlalchemy import Column, Integer, String
 
-metadata = MetaData()
+from database import Base
 
-todos = Table(
-    'todos',
-    metadata,
-    Column('id', Integer, primary_key=True),
-    Column('task', String(100), nullable=False,)
-)
+
+class ToDo(Base):
+    __tablename__ = 'todos'
+
+    id = Column(Integer, primary_key=True, index=True, unique=True)
+    task = Column(String(256))
