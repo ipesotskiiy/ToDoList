@@ -54,3 +54,18 @@ def update_todo(id: int, task: str):
         raise HTTPException(status_code=404, detail=f"todo item with id {id} not found")
 
     return todo
+
+
+@app.delete('/todo/{id}')
+def delete_todo(id: int):
+    session = Session(bind=engine, expire_on_commit=False)
+    todo = session.query(ToDo).get(id)
+
+    if todo:
+        session.delete(todo)
+        session.commit()
+        session.close()
+    else:
+        raise HTTPException(status_code=404, detail=f"todo item with id {id} not found")
+
+    return None
