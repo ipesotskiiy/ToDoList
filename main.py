@@ -1,29 +1,35 @@
-from fastapi import FastAPI, status, HTTPException
+from typing import List
+
+from fastapi import FastAPI, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 
-from database import engine
+from database import engine, SessionLocal
 from models.models import ToDo
-from schemas import ToDoRequest
+from schemas import ToDoCreateSchema, ToDoSchema
 
 app = FastAPI()
 
 
-@app.post('/todo', status_code=status.HTTP_201_CREATED)
-def create_todo(todo: ToDoRequest):
-    session = Session(bind=engine, expire_on_commit=False)
+def get_session():
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@app.post('/todo', response_model=ToDoSchema, status_code=status.HTTP_201_CREATED)
+def create_todo(todo: ToDoCreateSchema, session: Session = Depends(get_session)):
     tododb = ToDo(task=todo.task)
     session.add(tododb)
     session.commit()
-    id = tododb.id
-    session.close()
-    return f"created todo item with id {id}"
+    session.refresh(tododb)
+    return tododb
 
 
-@app.get('/todo/{id}')
-def read_todo(id: int):
-    session = Session(bind=engine, expire_on_commit=False)
+@app.get('/todo/{id}', response_model=ToDoSchema)
+def read_todo(id: int, session: Session = Depends(get_session)):
     todo = session.query(ToDo).get(id)
-    session.close()
 
     if not todo:
         raise HTTPException(status_code=404, detail=f"todo item with id {id} not found")
@@ -31,24 +37,19 @@ def read_todo(id: int):
     return todo
 
 
-@app.get('/todo')
-def read_todo_list():
-    session = Session(bind=engine, expire_on_commit=False)
+@app.get('/todo', response_model=List[ToDoSchema])
+def read_todo_list(session: Session = Depends(get_session)):
     todo_list = session.query(ToDo).all()
-    session.close()
     return todo_list
 
 
 @app.put('/todo/{id}')
-def update_todo(id: int, task: str):
-    session = Session(bind=engine, expire_on_commit=False)
+def update_todo(id: int, task: str, session: Session = Depends(get_session)):
     todo = session.query(ToDo).get(id)
 
     if todo:
         todo.task = task
         session.commit()
-
-    session.close()
 
     if not todo:
         raise HTTPException(status_code=404, detail=f"todo item with id {id} not found")
@@ -57,15 +58,12 @@ def update_todo(id: int, task: str):
 
 
 @app.delete('/todo/{id}')
-def delete_todo(id: int):
-    session = Session(bind=engine, expire_on_commit=False)
+def delete_todo(id: int, session: Session = Depends(get_session)):
     todo = session.query(ToDo).get(id)
-
     if todo:
         session.delete(todo)
         session.commit()
-        session.close()
     else:
         raise HTTPException(status_code=404, detail=f"todo item with id {id} not found")
 
-    return None
+    return f'ToDo object with the id {id} was successfully deleted'
