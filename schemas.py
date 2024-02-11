@@ -9,5 +9,5 @@ class ToDoSchema(BaseModel):
     id: int
     task: str
 
-    class Config:
-        orm_mode = True
+    class ConfigDict:
+        from_attributes = True
